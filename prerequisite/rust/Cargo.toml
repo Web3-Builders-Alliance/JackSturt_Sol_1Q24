@@ -1,0 +1,13 @@
+[package]
+name = "rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+solana-sdk = "1.15.2"
+solana-client = "1.15.2"
+solana-program = "1.15.2"
+borsh = "0.10.3"
+solana-idlgen = { git = "https://github.com/deanmlittle/solana-idlgen.git" }
