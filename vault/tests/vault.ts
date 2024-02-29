@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Vault } from "../target/types/vault";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { assert } from "chai";
 
 describe("anchor-vault-2024", () => {
   // Configure the client to use the local cluster.
@@ -100,21 +101,45 @@ describe("anchor-vault-2024", () => {
       .then(log);
   });
 
-  it("Can Withdraw!", async () => {
+  it("Can't Withdraw too fast!", async () => {
     // Add your test here.
 
-    const tx2 = await program.methods
-      .withdraw()
-      .accounts({
-        vault,
-        maker: maker.publicKey,
-        taker: taker.publicKey,
-        vaultState,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([taker])
-      .rpc()
-      .then(confirm)
-      .then(log);
+    try {
+      const tx2 = await program.methods
+        .withdraw()
+        .accounts({
+          vault,
+          maker: maker.publicKey,
+          taker: taker.publicKey,
+          vaultState,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([taker])
+        .rpc()
+        .then(confirm)
+        .then(log);
+      assert(false, "this should have failed");
+    } catch (e) {
+      assert(e.error.errorMessage === "Not Enough Time Has Passed");
+    }
+  });
+
+  it("Can Withdraw after delay!", async () => {
+    // Add your test here.
+    setTimeout(async () => {
+      const tx2 = await program.methods
+        .withdraw()
+        .accounts({
+          vault,
+          maker: maker.publicKey,
+          taker: taker.publicKey,
+          vaultState,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([taker])
+        .rpc()
+        .then(confirm)
+        .then(log);
+    }, 2000);
   });
 });

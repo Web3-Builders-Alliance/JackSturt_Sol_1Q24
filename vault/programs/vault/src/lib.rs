@@ -1,5 +1,7 @@
+use anchor_lang::error_code;
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer};
+use solana_program::clock::Clock;
 
 declare_id!("7V42QpFBf29UuhVGMf4hBxLS3fNgFzjTKX8PaUKGt7hn");
 
@@ -12,6 +14,7 @@ pub mod vault {
         ctx.accounts.vault_state.taker = ctx.accounts.taker.key();
         ctx.accounts.vault_state.state_bump = ctx.bumps.vault_state;
         ctx.accounts.vault_state.vault_bump = ctx.bumps.vault;
+
         Ok(())
     }
 
@@ -22,7 +25,8 @@ pub mod vault {
         };
         let cpi_program = ctx.accounts.system_program.to_account_info();
         let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
-
+        let slot_now = Clock::get()?.slot;
+        ctx.accounts.vault_state.withdraw_valid_after = slot_now + 16;
         transfer(cpi_context, amount)
     }
 
@@ -47,6 +51,11 @@ pub mod vault {
     }
 
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
+        let current_clock_slot = Clock::get()?.slot;
+        require!(
+            current_clock_slot > ctx.accounts.vault_state.withdraw_valid_after,
+            VaultError::NotEnoughTime,
+        );
         let cpi_accounts = Transfer {
             from: ctx.accounts.vault.to_account_info(),
             to: ctx.accounts.taker.to_account_info(),
@@ -95,10 +104,11 @@ pub struct VaultState {
     pub taker: Pubkey,
     pub state_bump: u8,
     pub vault_bump: u8,
+    pub withdraw_valid_after: u64,
 }
 
 impl Space for VaultState {
-    const INIT_SPACE: usize = 8 + 32 + 32 + 1 + 1;
+    const INIT_SPACE: usize = 8 + 32 + 32 + 1 + 1 + 8;
 }
 
 #[derive(Accounts)]
@@ -163,4 +173,10 @@ pub struct Withdraw<'info> {
     )]
     pub vault: SystemAccount<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[error_code]
+pub enum VaultError {
+    #[msg("Not Enough Time Has Passed")]
+    NotEnoughTime,
 }
