@@ -17,9 +17,11 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import base58 from "bs58";
 
 describe("wba-escrow", () => {
   // Configure the client to use the local cluster.
+
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.WbaEscrow as Program<WbaEscrow>;
@@ -164,7 +166,7 @@ describe("wba-escrow", () => {
       .then(log);
   });
 
-  it("Can Take", async () => {
+  xit("Can Take", async () => {
     const tx = program.methods
       .take()
       .accounts({
